@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Owner Login & Registration</title>
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Segoe UI,sans-serif;
+}
+
+body{
+background:linear-gradient(135deg,#0f172a,#1e293b,#334155);
+min-height:100vh;
+display:flex;
+justify-content:center;
+align-items:center;
+padding:20px;
+}
+
+.card{
+width:450px;
+background:white;
+padding:25px;
+border-radius:15px;
+box-shadow:0 5px 15px rgba(0,0,0,0.2);
+}
+
+h2{
+text-align:center;
+margin-bottom:15px;
+}
+
+input{
+width:100%;
+padding:12px;
+margin:8px 0;
+border:1px solid #ddd;
+border-radius:8px;
+}
+
+button{
+width:100%;
+padding:12px;
+margin-top:10px;
+border:none;
+border-radius:8px;
+background:#38bdf8;
+color:white;
+cursor:pointer;
+}
+
+button:hover{
+background:#0ea5e9;
+}
+
+#registerBox{
+display:none;
+margin-top:20px;
+}
+
+</style>
+</head>
+<body>
+
+<div class="card">
+
+<h2>🏪 Owner Login</h2>
+
+<input type="email" id="ownerEmail" placeholder="Owner Email">
+
+<input type="password" id="ownerPassword" placeholder="Owner Password">
+
+<button onclick="ownerLogin()">
+Login
+</button>
+<p style="margin-top:15px;">
+<a href="#" onclick="forgotPassword()">
+Forgot Password?
+</a>
+</p>
+<button onclick="showRegister()">
+➕ Register New Mess / Hotel
+</button>
+
+<div id="registerBox">
+
+<h2>Create Account</h2>
+
+<input type="text" id="newMessName" placeholder="Mess / Hotel Name">
+
+<input type="text" id="newLocation" placeholder="Location">
+
+<input type="text" id="newPrice" placeholder="Price">
+
+<input type="text" id="newType" placeholder="Veg / Non Veg">
+
+<input type="email" id="newEmail" placeholder="Owner Email">
+
+<input type="password" id="newPassword" placeholder="Owner Password">
+
+<button onclick="registerOwner()">
+✅ Create Account
+</button>
+
+</div>
+
+</div>
+
+<script type="module">
+    import {
+db,
+ref,
+set,
+get
+} from "./firebase.js";
+
+function showRegister(){
+
+document.getElementById(
+"registerBox"
+).style.display="block";
+
+}
+
+async function registerOwner(){
+
+try{
+
+let newMess = {
+
+name: document.getElementById("newMessName").value,
+location: document.getElementById("newLocation").value,
+price: document.getElementById("newPrice").value,
+type: document.getElementById("newType").value,
+
+ownerEmail: document.getElementById("newEmail").value,
+ownerPassword: document.getElementById("newPassword").value,
+
+menu:"",
+photo:"",
+contactNumber:"",
+whatsappLink:"",
+openTime:"",
+closeTime:"",
+reviews:[]
+};
+console.log(newMess);
+alert("Trying to save: " + newMess.ownerEmail);
+await set(
+ref(
+db,
+"messes/" +
+newMess.ownerEmail.replace(/[.@]/g,"_")
+),
+newMess
+);
+
+alert("Account Created Successfully ✅");
+
+}
+catch(error){
+
+alert("Firebase Error: " + error.message);
+console.log(error);
+
+}
+
+}
+async function ownerLogin(){
+
+let email =
+document.getElementById("ownerEmail").value.trim();
+
+let password =
+document.getElementById("ownerPassword").value.trim();
+
+const snapshot =
+await get(
+ref(
+db,
+"messes/" + email.replace(/[.@]/g,"_")
+)
+);
+
+if(!snapshot.exists()){
+
+alert("Account Not Found");
+return;
+
+}
+
+let owner = snapshot.val();
+
+if(owner.ownerPassword === password){
+
+localStorage.setItem(
+"ownerLoggedIn",
+email
+);
+
+window.location.href =
+"owner-dashboard.html";
+
+}else{
+
+alert("Invalid Password");
+
+}
+}
+function forgotPassword(){
+
+    let email =
+    prompt("Enter your registered email");
+
+    let messes =
+    JSON.parse(
+    localStorage.getItem("messes")
+    ) || [];
+
+    let owner =
+    messes.find(
+    m => m.ownerEmail === email
+    );
+
+    if(owner){
+
+        let newPass =
+        prompt("Enter New Password");
+
+        owner.ownerPassword =
+        newPass;
+
+        localStorage.setItem(
+        "messes",
+        JSON.stringify(messes)
+        );
+
+        alert("Password Updated Successfully");
+
+    }else{
+
+        alert("Email Not Found");
+    }
+}
+window.ownerLogin = ownerLogin;
+window.registerOwner = registerOwner;
+window.showRegister = showRegister;
+window.forgotPassword = forgotPassword;
+</script>
+
+</body>
+</html>

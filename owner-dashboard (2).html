@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title> Mess Owner Dashboard</title>
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Segoe UI,sans-serif;
+}
+
+body{
+background:#f4f7fc;
+padding:20px;
+}
+
+.card{
+max-width:800px;
+margin:auto;
+background:white;
+padding:25px;
+border-radius:15px;
+box-shadow:0 2px 10px rgba(0,0,0,0.1);
+}
+
+h1{
+text-align:center;
+margin-bottom:20px;
+}
+
+h2{
+margin-top:20px;
+margin-bottom:10px;
+}
+
+input,textarea{
+width:100%;
+padding:12px;
+margin:8px 0;
+border:1px solid #ddd;
+border-radius:8px;
+}
+
+button{
+padding:12px 20px;
+border:none;
+border-radius:8px;
+background:#38bdf8;
+color:white;
+cursor:pointer;
+margin-top:10px;
+}
+
+button:hover{
+background:#0ea5e9;
+}
+
+img{
+width:100%;
+max-height:250px;
+object-fit:cover;
+border-radius:10px;
+margin-top:10px;
+}
+
+.logout{
+background:red;
+}
+
+.review{
+border:1px solid #ddd;
+padding:10px;
+margin-top:10px;
+border-radius:10px;
+}
+#backBtn{
+    background:#64748b;
+    color:white;
+    padding:8px 15px;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    margin-bottom:15px;
+}
+
+#backBtn:hover{
+    background:#475569;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+
+<button onclick="history.back()" id="backBtn">
+← Back
+</button>
+
+<h1>🏪 Mess Owner Dashboard</h1>
+
+<div id="messInfo"></div>
+
+<h2>📋 Weekly Menu</h2>
+<textarea id="menu" rows="5"></textarea>
+
+<h2>📞 Contact Number</h2>
+<input type="text" id="contactNumber">
+
+<h2>💬 WhatsApp Link</h2>
+<input type="text" id="whatsappLink">
+
+<h2>🕒 Opening Time</h2>
+<input type="time" id="openTime">
+
+<h2>🕒 Closing Time</h2>
+<input type="time" id="closeTime">
+
+<h2>📸 Upload Photo</h2>
+
+<input
+type="file"
+id="messPhoto"
+accept="image/*"
+capture="environment"
+onchange="previewPhoto(event)">
+
+<img id="photoPreview" src="">
+
+<button onclick="saveDetails()">
+💾 Save Details
+</button>
+
+<h2>⭐ Reviews</h2>
+
+<div id="reviewSection">
+No Reviews Yet
+</div>
+
+<br>
+
+<button class="logout" onclick="logout()">
+🚪 Logout
+</button>
+
+</div>
+
+<script type="module">
+import {
+  db,
+  ref,
+  set,
+  get
+} from "./firebase.js";
+
+let ownerEmail =
+localStorage.getItem("ownerLoggedIn");
+
+if(!ownerEmail){
+alert("Please Login First");
+window.location.href="owner-login.html";
+}
+
+let ownerMess;
+
+loadOwnerData();
+
+async function loadOwnerData(){
+
+    const snapshot = await get(
+        ref(db,"messes/" + ownerEmail.replace(/[.@]/g,"_"))
+    );
+
+    if(!snapshot.exists()){
+        document.getElementById("messInfo").innerHTML =
+        "<h2>No Mess Found For This Account</h2>";
+        return;
+    }
+
+    ownerMess = snapshot.val();
+    loadData();
+}
+function loadData(){
+
+document.getElementById("messInfo").innerHTML = `
+<h2>${ownerMess.name}</h2>
+<p><b>Location:</b> ${ownerMess.location}</p>
+<p><b>Price:</b> ${ownerMess.price}</p>
+<p><b>Type:</b> ${ownerMess.type}</p>
+`;
+
+document.getElementById("menu").value =
+ownerMess.menu || "";
+
+document.getElementById("contactNumber").value =
+ownerMess.contactNumber || "";
+
+document.getElementById("whatsappLink").value =
+ownerMess.whatsappLink || "";
+
+document.getElementById("openTime").value =
+ownerMess.openTime || "";
+
+document.getElementById("closeTime").value =
+ownerMess.closeTime || "";
+
+document.getElementById("photoPreview").src =
+ownerMess.photo || "";
+
+showReviews();
+
+}
+
+function previewPhoto(event){
+
+let file =
+event.target.files[0];
+
+if(!file) return;
+
+let reader =
+new FileReader();
+
+reader.onload = function(e){
+
+document.getElementById(
+"photoPreview"
+).src = e.target.result;
+
+ownerMess.photo =
+e.target.result;
+};
+
+reader.readAsDataURL(file);
+}
+
+ function saveDetails(){
+
+    if(!ownerMess){
+        alert("Mess data not loaded yet");
+        return;
+    }
+    
+alert("Save button clicked");
+ownerMess.menu =
+document.getElementById("menu").value;
+
+ownerMess.contactNumber =
+document.getElementById("contactNumber").value;
+
+ownerMess.whatsappLink =
+document.getElementById("whatsappLink").value;
+
+ownerMess.openTime =
+document.getElementById("openTime").value;
+
+ownerMess.closeTime =
+document.getElementById("closeTime").value;
+
+
+fetch("/api/messes", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify(ownerMess)
+})
+.then(res => res.json())
+.then(data => {
+  console.log("Success:", data);
+})
+.catch(err => {
+  console.error("Error:", err);
+});
+then(res => res.json())
+.then(data => {
+    alert("Details Saved Successfully ✅");
+})
+.catch(error => {
+    alert("Error: " + error);
+});
+}
+
+function showReviews(){
+
+let reviewDiv =
+document.getElementById("reviewSection");
+
+if(
+!ownerMess.reviews ||
+ownerMess.reviews.length === 0
+){
+reviewDiv.innerHTML =
+"No Reviews Yet";
+return;
+}
+
+let html = "";
+
+ownerMess.reviews.forEach(review => {
+
+html += `
+<div class="review">
+<p>⭐ ${review.rating}/5</p>
+<p>${review.comment}</p>
+</div>
+`;
+
+});
+
+reviewDiv.innerHTML = html;
+}
+
+function logout(){
+
+localStorage.removeItem(
+"ownerLoggedIn"
+);
+
+window.location.href =
+"owner-login.html";
+
+}
+
+window.saveDetails = saveDetails;
+window.logout = logout;
+</script>
+
+</body>
+</html>
